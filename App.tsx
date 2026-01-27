@@ -396,7 +396,7 @@ const App: React.FC = () => {
               <div className="absolute -inset-1 border border-fintechGold/10 rounded-full animate-spin-slow opacity-40" style={{ animationDuration: '30s' }}></div>
               <div className="absolute inset-0 border border-fintechGold/30 rounded-full group-hover/profile:border-fintechGold transition-colors duration-500"></div>
               <img
-                src="/Perfil.jpg"
+                src="Perfil.jpg"
                 alt="Erik Pedraza García"
                 className="w-full h-full rounded-full object-cover grayscale brightness-110 border-4 border-slate-900 relative z-10 transition-all duration-500 group-hover/profile:grayscale-0"
               />
