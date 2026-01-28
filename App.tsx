@@ -1,8 +1,8 @@
 /**
  * App.tsx
  *
+ * Main entry point for the Fintech Professional Portfolio.
  * Author: Erik Pedraza García
- * Date: 2025
  */
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -11,8 +11,8 @@ import {
   GraduationCap, Award, Zap, TrendingUp, BarChart3, ExternalLink, ChevronRight,
   ChevronDown, Building2, ShieldCheck, Activity, Server, Lock, Cpu as CpuIcon,
   User, Lightbulb, Workflow, Search, MessageSquareCode, Play, RotateCcw,
-  Monitor, Dna, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, RefreshCw,
-  ArrowUpCircle, Hash, Command, Star
+  Monitor, Dna, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  ArrowUpCircle, Hash, Command, Star, FileText, X
 } from 'lucide-react';
 import { PORTFOLIO_DATA } from './constants';
 import { Language } from './types';
@@ -25,10 +25,6 @@ const COLS = 10;
 const ROWS = 20;
 const BLOCK_SIZE = 25;
 
-/**
- * Definition of Tetromino shapes and their display colors.
- * Each shape is a 2D array (matrix) of 0s and 1s.
- */
 const TETROMINOS: Record<string, { shape: number[][], color: string }> = {
   I: { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], color: '#c5a059' },
   J: { shape: [[1, 0, 0], [1, 1, 1], [0, 0, 0]], color: '#c5a059' },
@@ -39,25 +35,13 @@ const TETROMINOS: Record<string, { shape: number[][], color: string }> = {
   Z: { shape: [[1, 1, 0], [0, 1, 1], [0, 0, 0]], color: '#c5a059' },
 };
 
-/**
- * Generates a random Tetromino piece starting at the top center of the board.
- */
 const randomTetromino = () => {
   const keys = Object.keys(TETROMINOS);
   const key = keys[Math.floor(Math.random() * keys.length)];
   return { ...TETROMINOS[key], pos: { x: Math.floor(COLS / 2) - 1, y: 0 } };
 };
 
-/**
- * DataChompsTetris Component
- *
- * A self-contained Tetris mini-game.
- * Handles game loop, collision detection, score calculation, and rendering.
- *
- * @param labels - Localized strings for game UI (Score, Start, etc.)
- */
 const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
-  // Game State
   const [active, setActive] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -65,13 +49,9 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
   const [piece, setPiece] = useState(randomTetromino());
   const [dropTime, setDropTime] = useState(800);
 
-  // Refs for Game Loop
   const requestRef = useRef<number>(null);
   const lastTimeRef = useRef<number>(0);
 
-  /**
-   * Checks if a proposed move is valid (within bounds and no collision).
-   */
   const isValidMove = (p: any, b: string[][], moveX: number, moveY: number, rotatedShape?: number[][]) => {
     const shape = rotatedShape || p.shape;
     for (let y = 0; y < shape.length; y++) {
@@ -88,16 +68,10 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
     return true;
   };
 
-  /**
-   * Rotates a matrix 90 degrees.
-   */
   const rotate = (matrix: number[][]) => {
     return matrix[0].map((_, index) => matrix.map(col => col[index]).reverse());
   };
 
-  /**
-   * Scans the board for full lines, clears them, and updates the score.
-   */
   const clearLines = useCallback((b: string[][]) => {
     const newBoard = b.filter(row => row.some(cell => !cell));
     const linesCleared = ROWS - newBoard.length;
@@ -109,15 +83,10 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
     return b;
   }, []);
 
-  /**
-   * Handles the logic for dropping a piece one step down.
-   * If collision occurs, locks the piece and spawns a new one.
-   */
   const drop = useCallback(() => {
     if (isValidMove(piece, board, 0, 1)) {
       setPiece(prev => ({ ...prev, pos: { ...prev.pos, y: prev.pos.y + 1 } }));
     } else {
-      // Lock piece into board
       const newBoard = board.map(row => [...row]);
       piece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
@@ -141,9 +110,24 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
     }
   }, [piece, board, clearLines]);
 
-  /**
-   * The main game loop driven by requestAnimationFrame.
-   */
+  // Touch Controls Handlers
+  const moveLeft = () => {
+    if (isValidMove(piece, board, -1, 0)) setPiece(prev => ({ ...prev, pos: { ...prev.pos, x: prev.pos.x - 1 } }));
+  };
+
+  const moveRight = () => {
+    if (isValidMove(piece, board, 1, 0)) setPiece(prev => ({ ...prev, pos: { ...prev.pos, x: prev.pos.x + 1 } }));
+  };
+
+  const moveDown = () => {
+    drop();
+  };
+
+  const rotatePiece = () => {
+    const rotated = rotate(piece.shape);
+    if (isValidMove(piece, board, 0, 0, rotated)) setPiece(prev => ({ ...prev, shape: rotated }));
+  };
+
   const update = useCallback((time: number) => {
     if (gameOver) return;
     const deltaTime = time - lastTimeRef.current;
@@ -163,22 +147,16 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
     };
   }, [active, gameOver, update]);
 
-  /**
-   * Keyboard event listener for game controls.
-   */
   useEffect(() => {
     const handleKeys = (e: KeyboardEvent) => {
       if (!active || gameOver) return;
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
 
       switch (e.key) {
-        case 'ArrowLeft': if (isValidMove(piece, board, -1, 0)) setPiece(prev => ({ ...prev, pos: { ...prev.pos, x: prev.pos.x - 1 } })); break;
-        case 'ArrowRight': if (isValidMove(piece, board, 1, 0)) setPiece(prev => ({ ...prev, pos: { ...prev.pos, x: prev.pos.x + 1 } })); break;
-        case 'ArrowDown': drop(); break;
-        case 'ArrowUp':
-          const rotated = rotate(piece.shape);
-          if (isValidMove(piece, board, 0, 0, rotated)) setPiece(prev => ({ ...prev, shape: rotated }));
-          break;
+        case 'ArrowLeft': moveLeft(); break;
+        case 'ArrowRight': moveRight(); break;
+        case 'ArrowDown': moveDown(); break;
+        case 'ArrowUp': rotatePiece(); break;
       }
     };
     window.addEventListener('keydown', handleKeys);
@@ -195,7 +173,6 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
 
   return (
     <div className="relative w-full max-w-[600px] mx-auto bg-slate-900 border border-fintechGold/10 rounded-xl overflow-hidden shadow-2xl group/game font-mono animate-slide-up delay-500">
-      {/* Game Header */}
       <div className="bg-fintechGold/5 border-b border-fintechGold/10 p-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Monitor size={12} className="text-fintechGold" />
@@ -209,9 +186,7 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
         </div>
       </div>
 
-      {/* Game Area */}
       <div className="relative h-[550px] bg-slate-950 flex items-center justify-center p-2">
-         {/* Background Grid */}
          <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: 'linear-gradient(#c5a059 1px, transparent 1px), linear-gradient(90deg, #c5a059 1px, transparent 1px)',
             backgroundSize: `${BLOCK_SIZE}px ${BLOCK_SIZE}px`
@@ -237,7 +212,6 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
           </div>
         ) : (
           <div className="relative w-[250px] h-[500px] border border-slate-700/30 bg-slate-900/80">
-            {/* Grid Rendering */}
             {board.map((row, y) => row.map((cell, x) => (
                cell && (
                  <div
@@ -254,8 +228,6 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
                  />
                )
             )))}
-
-            {/* Current Piece Rendering */}
             {piece.shape.map((row, y) => row.map((val, x) => (
               val ? (
                 <div
@@ -271,8 +243,6 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
                 />
               ) : null
             )))}
-
-            {/* Game Over Screen */}
             {gameOver && (
               <div className="absolute inset-0 z-30 bg-slate-900/95 flex flex-col items-center justify-center animate-in fade-in duration-500 backdrop-blur-sm">
                 <div className="text-rose-500 text-[15px] tracking-[0.4em] mb-4 font-bold flex items-center gap-2 text-center px-4">
@@ -292,9 +262,9 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
           </div>
         )}
 
-        {/* Controls Hint */}
+        {/* Desktop Controls Hint */}
         {active && !gameOver && (
-           <div className="absolute right-4 bottom-4 flex flex-col gap-2 opacity-30 group-hover/game:opacity-60 transition-opacity">
+           <div className="hidden md:flex absolute right-4 bottom-4 flex-col gap-2 opacity-30 group-hover/game:opacity-60 transition-opacity">
               <div className="flex gap-1 justify-center"><div className="p-1 border border-slate-500/20 rounded"><ArrowUp size={10} className="text-slate-400"/></div></div>
               <div className="flex gap-1">
                  <div className="p-1 border border-slate-500/20 rounded"><ArrowLeft size={10} className="text-slate-400"/></div>
@@ -303,9 +273,41 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
               </div>
            </div>
         )}
+
+        {/* Mobile Touch Controls */}
+        {active && !gameOver && (
+           <div className="md:hidden absolute inset-x-0 bottom-4 flex justify-center gap-8 z-30 px-4">
+              <button
+                className="w-12 h-12 bg-slate-800/80 border border-fintechGold/30 rounded-full flex items-center justify-center active:bg-fintechGold/20"
+                onClick={rotatePiece}
+              >
+                <RotateCcw size={20} className="text-fintechGold" />
+              </button>
+
+              <div className="flex gap-2">
+                <button
+                  className="w-12 h-12 bg-slate-800/80 border border-slate-600/50 rounded-full flex items-center justify-center active:bg-slate-700"
+                  onClick={moveLeft}
+                >
+                  <ArrowLeft size={20} className="text-slate-300" />
+                </button>
+                <button
+                  className="w-12 h-12 bg-slate-800/80 border border-slate-600/50 rounded-full flex items-center justify-center active:bg-slate-700"
+                  onClick={moveDown}
+                >
+                  <ArrowDown size={20} className="text-slate-300" />
+                </button>
+                <button
+                  className="w-12 h-12 bg-slate-800/80 border border-slate-600/50 rounded-full flex items-center justify-center active:bg-slate-700"
+                  onClick={moveRight}
+                >
+                  <ArrowRight size={20} className="text-slate-300" />
+                </button>
+              </div>
+           </div>
+        )}
       </div>
 
-      {/* Footer Status */}
       <div className="bg-slate-900/90 border-t border-slate-700/30 p-2 flex items-center justify-between text-[11px] text-slate-500 tracking-widest uppercase font-black">
           <div className="flex items-center gap-2">
              <div className={`w-1 h-1 rounded-full ${gameOver ? 'bg-rose-500' : 'bg-emerald-500'} animate-pulse`}></div>
@@ -322,15 +324,12 @@ const DataChompsTetris: React.FC<{ labels: any }> = ({ labels }) => {
 // ==========================================
 
 const App: React.FC = () => {
-  // --- State Management ---
   const [lang, setLang] = useState<Language>('EN');
   const [mounted, setMounted] = useState(false);
   const [activeContact, setActiveContact] = useState<{label: string, value: string} | null>(null);
-
-  // State for collapsible sections in Sidebar (Click-based)
   const [activeStack, setActiveStack] = useState<string | null>(null);
+  const [selectedCert, setSelectedCert] = useState<string | null>(null);
 
-  // --- Refs for Navigation ---
   const aboutRef = useRef<HTMLElement>(null);
   const companyRef = useRef<HTMLElement>(null);
   const highlightsRef = useRef<HTMLElement>(null);
@@ -339,17 +338,14 @@ const App: React.FC = () => {
   const labsRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLElement>(null);
 
-  // --- Effects ---
   useEffect(() => {
-    setMounted(true); // Trigger entry animations
+    setMounted(true);
   }, []);
 
-  // --- Memoized Content ---
   const content = useMemo(() => {
     return lang === 'EN' ? PORTFOLIO_DATA.en : PORTFOLIO_DATA.es;
   }, [lang]);
 
-  // --- Handlers ---
   const toggleLanguage = () => {
     setLang(prev => prev === 'EN' ? 'ES' : 'EN');
   };
@@ -362,21 +358,28 @@ const App: React.FC = () => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const openCert = (certName: string) => {
+    setSelectedCert(certName);
+  };
+
+  const closeCert = () => {
+    setSelectedCert(null);
+  };
+
+  // Construct the image path using Vite's base URL handling
+  const profileImgPath = `${import.meta.env.BASE_URL}Perfil.jpg`;
+
   return (
     <div className={`flex flex-col items-center justify-start md:justify-center w-full min-h-screen md:min-h-screen p-0 transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'} bg-slate-950`}>
 
       {/* Main Container Card */}
       <div className="relative w-full max-w-[96vw] bg-slate-900 border-0 md:border md:border-slate-700/30 rounded-none md:rounded-xl shadow-none md:shadow-[0_0_80px_rgba(15,23,42,0.6)] flex flex-col md:flex-row overflow-hidden md:overflow-hidden min-h-fit md:min-h-0 md:h-[92vh] group">
 
-        {/* Decorative Scanline Animation */}
         <div className="scanline opacity-30"></div>
 
-        {/* ==========================================
-            SIDEBAR: PERSONAL INTELLIGENCE PANEL
-           ========================================== */}
+        {/* Sidebar */}
         <aside className="w-full md:w-[400px] lg:w-[450px] bg-slate-900 border-b md:border-b-0 md:border-r border-slate-700/30 p-4 md:p-6 lg:p-8 flex flex-col shrink-0 relative z-20 overflow-y-auto md:overflow-y-auto no-scrollbar animate-slide-up delay-100">
 
-          {/* Header Utilities (Status & Lang) */}
           <div className="flex items-center justify-between mb-8">
              <div className="flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse"></div>
@@ -390,21 +393,20 @@ const App: React.FC = () => {
               </button>
           </div>
 
-          {/* Profile Identity (Photo & ID) - STATIC & LARGER */}
           <div className="flex flex-col items-center mb-8">
-            <div className="relative w-56 h-56 mb-5 group/profile shrink-0">
+            <div className="relative w-56 h-56 mb-5 group/profile shrink-0 overflow-hidden rounded-full border-4 border-slate-900">
               <div className="absolute -inset-1 border border-fintechGold/10 rounded-full animate-spin-slow opacity-40" style={{ animationDuration: '30s' }}></div>
-              <div className="absolute inset-0 border border-fintechGold/30 rounded-full group-hover/profile:border-fintechGold transition-colors duration-500"></div>
+              <div className="absolute inset-0 border border-fintechGold/30 rounded-full group-hover/profile:border-fintechGold transition-colors duration-500 z-20 pointer-events-none"></div>
               <img
-                src="Perfil.jpg"
+                src={profileImgPath}
                 alt="Erik Pedraza García"
-                className="w-full h-full rounded-full object-cover grayscale brightness-110 border-4 border-slate-900 relative z-10 transition-all duration-500 group-hover/profile:grayscale-0"
+                className="w-full h-full object-cover grayscale brightness-110 relative z-10 transition-all duration-500 group-hover/profile:grayscale-0"
               />
-              <div className="absolute bottom-1 right-1 bg-fintechGold p-1.5 rounded-full z-20 shadow-lg">
+              <div className="absolute bottom-1 right-1 bg-fintechGold p-1.5 rounded-full z-30 shadow-lg">
                 <ShieldCheck size={14} className="text-slate-900" />
               </div>
             </div>
-            <div className="flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center mt-2">
                <span className="text-slate-500 font-mono text-[11px] tracking-[0.3em] uppercase mb-1">AUTH: EXECUTIVE</span>
                <span className="text-slate-300 font-mono text-[12px] tracking-widest uppercase border border-slate-700/50 px-4 py-1.5 rounded bg-slate-800/50">
                 ID // 0xBBVA_EPG
@@ -412,26 +414,20 @@ const App: React.FC = () => {
             </div>
           </div>
 
-         {/* Personal Bio [The Individual] - HOVER COLLAPSIBLE (GRID ANIMATION FIX) */}
-          <div className="mb-8 px-2 group/bio cursor-help">
-            <h4 className="text-fintechGold/60 font-mono text-[12px] tracking-[0.4em] uppercase mb-2 flex items-center justify-between gap-2 font-bold border-b border-slate-800 pb-2 group-hover/bio:text-fintechGold transition-colors">
-              <div className="flex items-center gap-2">
-                 <User size={12} />
-                 {lang === 'EN' ? 'THE INDIVIDUAL' : 'EL INDIVIDUO'}
-              </div>
-              <ChevronDown size={14} className="transition-transform duration-300 group-hover/bio:rotate-180 opacity-50" />
+          {/* Personal Bio [The Individual] - EXPAND ON HOVER */}
+          <div className="mb-8 px-2 group relative">
+            <h4 className="text-fintechGold/60 font-mono text-[12px] tracking-[0.4em] uppercase mb-4 flex items-center gap-2 font-bold border-b border-slate-800 pb-2">
+              <User size={12} />
+              {lang === 'EN' ? 'THE INDIVIDUAL' : 'EL INDIVIDUO'}
             </h4>
-            {/* CSS Grid Animation Technique for Auto Height */}
-            <div className="grid grid-rows-[0fr] group-hover/bio:grid-rows-[1fr] transition-all duration-700 ease-in-out opacity-0 group-hover/bio:opacity-100">
-               <div className="overflow-hidden">
-                 <p className="text-slate-400 text-[14px] leading-relaxed italic border-l border-slate-700 pl-4 pt-2">
-                   {content.personalBio}
-                 </p>
-               </div>
+            <div className="relative">
+              <p className="text-slate-400 text-[14px] leading-relaxed italic border-l border-slate-700 pl-4 max-h-[4.5rem] md:max-h-[6rem] overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[20rem]">
+                {content.personalBio}
+              </p>
+              <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-slate-900 to-transparent transition-opacity duration-500 group-hover:opacity-0"></div>
             </div>
           </div>
 
-          {/* Tech Stack Matrix - Collapsible Sections */}
           <div className="mb-10 flex-grow">
             <h3 className="text-fintechGold/50 font-mono text-[13px] tracking-[0.4em] uppercase mb-8 border-b border-slate-700/30 pb-2 flex items-center gap-2 font-bold">
               <Activity size={14} />
@@ -439,7 +435,6 @@ const App: React.FC = () => {
             </h3>
             <div className="space-y-6">
 
-              {/* Backend Systems Collapsible (CLICK BASED) */}
               <div>
                  <div
                     className={`cursor-pointer text-slate-500 text-[11px] tracking-widest uppercase mb-2 font-black flex items-center justify-between gap-2 border-b border-slate-800/50 pb-2 hover:text-fintechGold transition-colors ${activeStack === 'backend' ? 'text-fintechGold' : ''}`}
@@ -464,7 +459,6 @@ const App: React.FC = () => {
                  </div>
               </div>
 
-              {/* Data Architecture Collapsible (CLICK BASED) */}
               <div>
                  <div
                     className={`cursor-pointer text-slate-500 text-[11px] tracking-widest uppercase mb-2 font-black flex items-center justify-between gap-2 border-b border-slate-800/50 pb-2 hover:text-fintechGold transition-colors ${activeStack === 'data' ? 'text-fintechGold' : ''}`}
@@ -492,7 +486,6 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Contacts Section */}
           <div className="mt-auto border-t border-slate-700/30 pt-6">
              <div className="grid grid-cols-4 gap-2 mb-4">
                 <MiniContactLink
@@ -505,11 +498,11 @@ const App: React.FC = () => {
                   icon={<Linkedin size={16} />}
                   onHover={() => setActiveContact({label: 'PRO_NETWORK', value: 'linkedin.com/in/erik-pedraza'})}
                   onLeave={() => setActiveContact(null)}
-                  href="https://www.linkedin.com/in/erik-pedraza-garcia/"
+                  href="https://linkedin.com"
                 />
                 <MiniContactLink
                   icon={<Github size={16} />}
-                  onHover={() => setActiveContact({label: 'DEVELOPER_GIT', value: 'En construccion'})}
+                  onHover={() => setActiveContact({label: 'DEVELOPER_GIT', value: 'github.com/erik-chomps'})}
                   onLeave={() => setActiveContact(null)}
                   href="https://github.com"
                 />
@@ -520,7 +513,6 @@ const App: React.FC = () => {
                 />
              </div>
 
-             {/* Dynamic Contact Details Display */}
              <div className="h-10 bg-slate-800/30 border border-slate-700/30 rounded p-2 flex flex-col justify-center overflow-hidden relative">
                 <div className={`transition-all duration-200 ${activeContact ? 'opacity-100 transform-none' : 'opacity-10 translate-y-1'}`}>
                   <div className="text-fintechGold/70 font-mono text-[11px] tracking-[0.2em] uppercase mb-0.5">
@@ -539,12 +531,9 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* ==========================================
-            MAIN BODY: EXECUTIVE CONSOLE
-           ========================================== */}
+        {/* Main Body */}
         <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-4 lg:p-6 relative scroll-smooth bg-gradient-to-br from-slate-900 to-slate-800 no-scrollbar">
 
-          {/* 0. Header Identity */}
           <header className="mb-8 relative animate-slide-up delay-200">
             <div className="absolute -top-6 -left-6 text-[80px] font-bold text-slate-800/20 select-none uppercase font-mono tracking-tighter hidden lg:block">
               EPG
@@ -565,19 +554,16 @@ const App: React.FC = () => {
             </div>
           </header>
 
-          {/* 1. Executive Summary (IDENTITY) - STATIC & AUTO-ADJUST */}
-          <section ref={aboutRef} className="mb-16 animate-slide-up delay-300 w-full h-auto">
+          <section ref={aboutRef} className="mb-16 animate-slide-up delay-300">
             <SectionTitle icon={<Search size={18}/>} text={content.sections.about} />
-
-            {/* Contenedor simple y fluido */}
-            <div className="relative w-full">
-              <p className="text-slate-300 text-base md:text-lg lg:text-xl leading-relaxed font-light border-l-2 border-fintechGold/40 pl-6 md:pl-8 w-full max-w-4xl italic break-words">
+            <div className="relative group/about">
+              <div className="absolute -inset-4 bg-fintechGold/[0.01] border border-fintechGold/5 rounded-xl scale-95 opacity-0 group-hover/about:scale-100 group-hover/about:opacity-100 transition-all duration-500"></div>
+              <p className="text-slate-300 text-base md:text-lg lg:text-xl leading-relaxed font-light border-l-2 border-fintechGold/40 pl-8 max-w-4xl italic relative z-10">
                 {content.aboutText}
               </p>
             </div>
           </section>
 
-          {/* 2. Strategic Vision (DATA CHOMPS) */}
           <section ref={companyRef} className="mb-16 animate-slide-up delay-400">
             <SectionTitle icon={<Lightbulb size={18}/>} text={content.sections.company} />
             <div className="relative p-8 md:p-10 bg-slate-800/20 border border-fintechGold/10 rounded-xl overflow-hidden group/card hover:border-fintechGold/30 transition-all duration-500">
@@ -617,7 +603,6 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* 3. KEY ACHIEVEMENTS (HIGHLIGHTS) */}
           <section ref={highlightsRef} className="mb-16 animate-slide-up delay-500">
             <SectionTitle icon={<Star size={18}/>} text={content.sections.highlights} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -634,7 +619,6 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* 4. Professional Chronology (EXPERIENCE) */}
           <section ref={experienceRef} className="mb-16 animate-slide-up delay-500">
             <SectionTitle icon={<Workflow size={18}/>} text={content.sections.experience} />
             <div className="space-y-12 pl-6">
@@ -655,12 +639,10 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* 5. Education & Credentials */}
           <section ref={educationRef} className="mb-16 grid grid-cols-1 xl:grid-cols-2 gap-16 animate-slide-up delay-500">
             <div>
                <SectionTitle icon={<GraduationCap size={18}/>} text={content.sections.education} />
                <div className="space-y-10">
-                {/* Academic Experience (Detailed) - ONLY THIS ONE */}
                 {content.academicExperience && content.academicExperience.map((exp, i) => (
                   <div key={`acad-${i}`} className="group/edu relative">
                     <div className="relative z-10">
@@ -676,59 +658,23 @@ const App: React.FC = () => {
             <div>
               <SectionTitle icon={<Award size={18}/>} text="CREDENTIALS" />
               <div className="grid grid-cols-1 gap-4">
-                {content.certs.map((cert, i) => {
-                  // Definimos si el elemento es clickeable
-                  const isLink = !!cert.url;
-
-                  // Elemento contenedor base (div o a)
-                  const Container = isLink ? 'a' : 'div';
-
-                  return (
-                    <Container
-                      key={i}
-                      href={isLink ? cert.url : undefined}
-                      target={isLink ? "_blank" : undefined}
-                      rel={isLink ? "noopener noreferrer" : undefined}
-                      className={`
-                        flex items-center gap-4 p-4
-                        bg-slate-800/20 border border-slate-700/30 rounded
-                        text-slate-500 text-[13px] font-mono
-                        transition-all group/cert
-                        ${isLink
-                          ? 'hover:border-fintechGold/30 hover:text-slate-200 cursor-pointer hover:bg-fintechGold/5'
-                          : 'cursor-default opacity-80'}
-                      `}
-                    >
-                      {/* Icono izquierdo */}
-                      <div className={`
-                        w-8 h-8 rounded flex items-center justify-center transition-colors
-                        ${isLink
-                          ? 'bg-fintechGold/5 text-fintechGold/30 group-hover/cert:text-fintechGold'
-                          : 'bg-slate-800 text-slate-600'}
-                      `}>
-                          <TrendingUp size={14} />
-                      </div>
-
-                      {/* Nombre del Certificado */}
-                      <span className="tracking-widest uppercase font-bold truncate pr-4">
-                        {cert.name}
-                      </span>
-
-                      {/* Flecha o Indicador de PDF a la derecha */}
-                      {isLink && (
-                        <ChevronRight
-                          size={14}
-                          className="ml-auto text-fintechGold opacity-0 -translate-x-2 group-hover/cert:opacity-100 group-hover/cert:translate-x-0 transition-all duration-300"
-                        />
-                      )}
-                    </Container>
-                  );
-                })}
+                {content.certs.map((cert, i) => (
+                  <div
+                    key={i}
+                    onClick={() => openCert(cert.name)}
+                    className="flex items-center gap-4 p-4 bg-slate-800/20 border border-slate-700/30 text-slate-500 text-[13px] font-mono hover:border-fintechGold/30 hover:text-slate-200 transition-all cursor-pointer group/cert rounded"
+                  >
+                    <div className="w-8 h-8 rounded bg-fintechGold/5 flex items-center justify-center text-fintechGold/30 group-hover/cert:text-fintechGold transition-colors">
+                        <TrendingUp size={14} />
+                    </div>
+                    <span className="tracking-widest uppercase font-bold">{cert.name}</span>
+                    <ChevronRight size={14} className="ml-auto text-fintechGold opacity-0 group-hover/cert:opacity-100 transition-all" />
+                  </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* 6. NEW SECTION: Labs Mini-Game (Tetris) */}
           <section ref={labsRef} className="mb-20 pb-12 animate-slide-up delay-700">
             <SectionTitle icon={<Monitor size={18}/>} text={content.sections.labs} />
             <div className="relative">
@@ -739,11 +685,9 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* Footer Terminal Stamp - INDUSTRIAL REDESIGN (COLOR FIXED) */}
           <footer className="mt-20 border-t border-fintechGold/10 animate-slide-up delay-700">
              <div className="bg-slate-900 border-b border-fintechGold/10 p-8 md:p-12 relative">
 
-                {/* Grid Background */}
                 <div className="absolute inset-0 opacity-[0.02]" style={{
                     backgroundImage: 'linear-gradient(#c5a059 1px, transparent 1px), linear-gradient(90deg, #c5a059 1px, transparent 1px)',
                     backgroundSize: '40px 40px'
@@ -751,7 +695,6 @@ const App: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
 
-                    {/* Col 1: Navigation Commands */}
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2 text-fintechGold/50 font-mono text-[10px] tracking-widest uppercase">
                             <Command size={12} /> SYSTEM_NAVIGATION
@@ -777,7 +720,6 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Col 2: Branding & Identity */}
                     <div className="flex flex-col gap-6 items-center md:items-start">
                         <div className="flex items-center gap-2 text-fintechGold/50 font-mono text-[10px] tracking-widest uppercase">
                             <Hash size={12} /> IDENTITY_CORE
@@ -802,7 +744,6 @@ const App: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Col 3: System Status & Visualizer */}
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2 text-fintechGold/50 font-mono text-[10px] tracking-widest uppercase">
                             <Activity size={12} /> SYSTEM_METRICS
@@ -824,7 +765,6 @@ const App: React.FC = () => {
                               <div className="h-full bg-fintechGold/50 w-[42%] animate-pulse"></div>
                            </div>
 
-                           {/* Audio Visualizer Effect */}
                            <div className="flex items-end gap-1 h-8 mt-2 border-b border-slate-800/50 pb-1">
                               {[...Array(12)].map((_, i) => (
                                  <div
@@ -843,7 +783,6 @@ const App: React.FC = () => {
                 </div>
              </div>
 
-             {/* Bottom Bar */}
              <div className="bg-slate-950 border-t border-fintechGold/10 p-2 flex justify-between items-center text-[9px] font-mono text-slate-600 tracking-widest uppercase px-8 md:px-12">
                 <span>SECURE_CONNECTION_ESTABLISHED</span>
                 <div className="flex gap-2">
@@ -855,6 +794,49 @@ const App: React.FC = () => {
 
         </main>
       </div>
+
+      {/* Certificate Modal */}
+      {selectedCert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-fintechGold/30 rounded-xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl relative">
+            <button
+              onClick={closeCert}
+              className="absolute -top-4 -right-4 bg-fintechGold text-slate-900 p-2 rounded-full hover:bg-white transition-colors shadow-lg z-50"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-950/50 rounded-t-xl">
+              <div className="flex items-center gap-3 text-fintechGold">
+                <FileText size={18} />
+                <span className="font-mono text-sm tracking-widest uppercase font-bold">{selectedCert}</span>
+              </div>
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">SECURE_DOC_VIEWER_V1.0</div>
+            </div>
+
+            <div className="flex-1 bg-slate-800/50 p-8 flex items-center justify-center overflow-hidden relative">
+               <div className="text-center">
+                  <div className="mb-6 flex justify-center opacity-20">
+                     <FileText size={80} className="text-fintechGold" />
+                  </div>
+                  <h3 className="text-slate-300 font-mono text-lg mb-2">DOCUMENT PREVIEW MODE</h3>
+                  <p className="text-slate-500 text-sm max-w-md mx-auto mb-8">
+                    In a production environment, the PDF file for <span className="text-fintechGold">"{selectedCert}"</span> would be rendered here.
+                  </p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 border border-fintechGold/20 rounded text-fintechGold/50 text-xs font-mono uppercase tracking-widest">
+                    <Lock size={12} /> Encrypted Connection
+                  </div>
+               </div>
+
+               <div className="absolute inset-0 pointer-events-none opacity-10" style={{
+                  backgroundImage: 'linear-gradient(rgba(197, 160, 89, 0.1) 1px, transparent 1px)',
+                  backgroundSize: '100% 4px'
+               }}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -863,10 +845,6 @@ const App: React.FC = () => {
 // HELPER COMPONENTS
 // ==========================================
 
-/**
- * SectionTitle Component
- * Renders a stylized section header with an icon and text.
- */
 const SectionTitle: React.FC<{ icon: React.ReactNode; text: string }> = ({ icon, text }) => (
   <h2 className="text-slate-200 font-mono text-[13px] tracking-[0.5em] mb-12 uppercase flex items-center gap-6">
     <div className="p-2.5 bg-fintechGold/5 rounded text-fintechGold border border-fintechGold/10 shadow-[0_0_20px_rgba(197,160,89,0.1)]">
@@ -876,10 +854,6 @@ const SectionTitle: React.FC<{ icon: React.ReactNode; text: string }> = ({ icon,
   </h2>
 );
 
-/**
- * StackIconItem Component
- * Renders a skill item with a progress bar and hover details.
- */
 const StackIconItem: React.FC<{
   icon: React.ReactNode;
   name: string;
@@ -906,7 +880,6 @@ const StackIconItem: React.FC<{
         <div className={`h-full ${color} opacity-20 group-hover/stack:opacity-80 transition-all duration-700 ease-out`} style={{ width: `${level}%` }}></div>
       </div>
 
-      {/* Unfolding Content */}
       <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isHovered ? 'max-h-40 mt-3 opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="bg-fintechGold/[0.03] border border-fintechGold/10 p-3 rounded flex gap-3 items-start">
           <div className="pt-0.5">
@@ -921,10 +894,6 @@ const StackIconItem: React.FC<{
   );
 };
 
-/**
- * MiniContactLink Component
- * Renders a small icon link for the contact section.
- */
 const MiniContactLink: React.FC<{
   icon: React.ReactNode;
   href?: string;
