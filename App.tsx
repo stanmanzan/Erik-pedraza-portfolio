@@ -414,17 +414,22 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Personal Bio [The Individual] - EXPAND ON HOVER */}
-          <div className="mb-8 px-2 group relative">
-            <h4 className="text-fintechGold/60 font-mono text-[12px] tracking-[0.4em] uppercase mb-4 flex items-center gap-2 font-bold border-b border-slate-800 pb-2">
-              <User size={12} />
-              {lang === 'EN' ? 'THE INDIVIDUAL' : 'EL INDIVIDUO'}
+         {/* Personal Bio [The Individual] - HOVER COLLAPSIBLE (GRID ANIMATION FIX) */}
+          <div className="mb-8 px-2 group/bio cursor-help">
+            <h4 className="text-fintechGold/60 font-mono text-[12px] tracking-[0.4em] uppercase mb-2 flex items-center justify-between gap-2 font-bold border-b border-slate-800 pb-2 group-hover/bio:text-fintechGold transition-colors">
+              <div className="flex items-center gap-2">
+                 <User size={12} />
+                 {lang === 'EN' ? 'THE INDIVIDUAL' : 'EL INDIVIDUO'}
+              </div>
+              <ChevronDown size={14} className="transition-transform duration-300 group-hover/bio:rotate-180 opacity-50" />
             </h4>
-            <div className="relative">
-              <p className="text-slate-400 text-[14px] leading-relaxed italic border-l border-slate-700 pl-4 max-h-[4.5rem] md:max-h-[6rem] overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[20rem]">
-                {content.personalBio}
-              </p>
-              <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-12 md:h-16 bg-gradient-to-t from-slate-900 to-transparent transition-opacity duration-500 group-hover:opacity-0"></div>
+            {/* CSS Grid Animation Technique for Auto Height */}
+            <div className="grid grid-rows-[0fr] group-hover/bio:grid-rows-[1fr] transition-all duration-700 ease-in-out opacity-0 group-hover/bio:opacity-100">
+               <div className="overflow-hidden">
+                 <p className="text-slate-400 text-[14px] leading-relaxed italic border-l border-slate-700 pl-4 pt-2">
+                   {content.personalBio}
+                 </p>
+               </div>
             </div>
           </div>
 
